@@ -10,15 +10,15 @@ app.use(express.json());
 
 const port = process.env.PORT || 3000;
 
-// Database connection
+// ✅ FIXED DATABASE CONNECTION (Railway compatible)
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+  ssl: {
+    rejectUnauthorized: false
+  }
 });
 
-let db;
-
-// Connect to database
+// ✅ Connect to DB
 async function connectDB() {
   try {
     await pool.query('SELECT NOW()');
@@ -29,7 +29,7 @@ async function connectDB() {
   }
 }
 
-// Validation schema for adding school
+// ✅ Validation schema
 const schoolSchema = Joi.object({
   name: Joi.string().min(1).required(),
   address: Joi.string().min(1).required(),
@@ -37,20 +37,24 @@ const schoolSchema = Joi.object({
   longitude: Joi.number().min(-180).max(180).required(),
 });
 
-// Haversine formula to calculate distance
+// ✅ Haversine Distance Function
 function calculateDistance(lat1, lon1, lat2, lon2) {
-  const R = 6371; // Radius of the Earth in km
+  const R = 6371;
   const dLat = (lat2 - lat1) * Math.PI / 180;
   const dLon = (lon2 - lon1) * Math.PI / 180;
-  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * Math.PI / 180) *
+    Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLon / 2) *
+    Math.sin(dLon / 2);
+
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  const distance = R * c; // Distance in km
-  return distance;
+  return R * c;
 }
 
-// API to add school
+// ✅ ADD SCHOOL API
 app.post('/addSchool', async (req, res) => {
   try {
     const { error, value } = schoolSchema.validate(req.body);
@@ -65,14 +69,18 @@ app.post('/addSchool', async (req, res) => {
       [name, address, latitude, longitude]
     );
 
-    res.status(201).json({ message: 'School added successfully', id: result.rows[0].id });
+    res.status(201).json({
+      message: 'School added successfully',
+      id: result.rows[0].id
+    });
+
   } catch (error) {
     console.error('Error adding school:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
 
-// API to list schools sorted by proximity
+// ✅ LIST SCHOOLS API
 app.get('/listSchools', async (req, res) => {
   try {
     const { latitude, longitude } = req.query;
@@ -84,7 +92,11 @@ app.get('/listSchools', async (req, res) => {
     const userLat = parseFloat(latitude);
     const userLon = parseFloat(longitude);
 
-    if (isNaN(userLat) || isNaN(userLon) || userLat < -90 || userLat > 90 || userLon < -180 || userLon > 180) {
+    if (
+      isNaN(userLat) || isNaN(userLon) ||
+      userLat < -90 || userLat > 90 ||
+      userLon < -180 || userLon > 180
+    ) {
       return res.status(400).json({ error: 'Invalid latitude or longitude' });
     }
 
@@ -99,13 +111,14 @@ app.get('/listSchools', async (req, res) => {
     schoolsWithDistance.sort((a, b) => a.distance - b.distance);
 
     res.json(schoolsWithDistance);
+
   } catch (error) {
     console.error('Error listing schools:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
 
-// Start server
+// ✅ START SERVER
 connectDB().then(() => {
   app.listen(port, () => {
     console.log(`Server running on port ${port}`);
