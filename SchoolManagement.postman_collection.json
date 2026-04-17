@@ -59,7 +59,7 @@
   "variable": [
     {
       "key": "base_url",
-      "value": "https://your-deployed-url.com"
+      "value": "https://your-railway-app-name.up.railway.app"
     }
   ]
 }
