@@ -1,5 +1,5 @@
 const express = require('express');
-const mysql = require('mysql2/promise');
+const { Pool } = require('pg');
 const Joi = require('joi');
 const cors = require('cors');
 require('dotenv').config();
@@ -11,22 +11,18 @@ app.use(express.json());
 const port = process.env.PORT || 3000;
 
 // Database connection
-const dbConfig = {
-  host: process.env.DB_HOST,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME,
-  port: process.env.DB_PORT || 3306,
-  ssl: process.env.DB_SSL === 'true' ? {} : false,
-};
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+});
 
 let db;
 
 // Connect to database
 async function connectDB() {
   try {
-    db = await mysql.createConnection(dbConfig);
-    console.log('Connected to MySQL database');
+    await pool.query('SELECT NOW()');
+    console.log('Connected to PostgreSQL database');
   } catch (error) {
     console.error('Database connection failed:', error);
     process.exit(1);
@@ -64,12 +60,12 @@ app.post('/addSchool', async (req, res) => {
 
     const { name, address, latitude, longitude } = value;
 
-    const [result] = await db.execute(
-      'INSERT INTO schools (name, address, latitude, longitude) VALUES (?, ?, ?, ?)',
+    const result = await pool.query(
+      'INSERT INTO schools (name, address, latitude, longitude) VALUES ($1, $2, $3, $4) RETURNING id',
       [name, address, latitude, longitude]
     );
 
-    res.status(201).json({ message: 'School added successfully', id: result.insertId });
+    res.status(201).json({ message: 'School added successfully', id: result.rows[0].id });
   } catch (error) {
     console.error('Error adding school:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -92,7 +88,8 @@ app.get('/listSchools', async (req, res) => {
       return res.status(400).json({ error: 'Invalid latitude or longitude' });
     }
 
-    const [rows] = await db.execute('SELECT * FROM schools');
+    const result = await pool.query('SELECT * FROM schools');
+    const rows = result.rows;
 
     const schoolsWithDistance = rows.map(school => ({
       ...school,

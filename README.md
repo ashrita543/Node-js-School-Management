@@ -1,6 +1,6 @@
 # School Management APIs
 
-This project implements Node.js APIs for managing school data using Express.js and MySQL.
+This project implements Node.js APIs for managing school data using Express.js and PostgreSQL.
 
 ## Features
 
@@ -17,20 +17,11 @@ This project implements Node.js APIs for managing school data using Express.js a
 
 ## Environment Variables
 
-Create a `.env` file with:
-
-```
-DB_HOST=your-cloud-mysql-host
-DB_USER=your-username
-DB_PASSWORD=your-password
-DB_NAME=school_management
-DB_PORT=3306
-DB_SSL=true
-```
+Railway automatically provides `DATABASE_URL` for PostgreSQL. No manual setup needed.
 
 ## Database Schema
 
-Run the `schema.sql` file in your MySQL database to create the schools table.
+Railway will create the PostgreSQL database automatically. Run the `schema.sql` in Railway's database console.
 
 ## APIs
 
