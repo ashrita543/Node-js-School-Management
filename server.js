@@ -4,16 +4,22 @@ const Joi = require('joi');
 const cors = require('cors');
 require('dotenv').config();
 
+// ✅ Prevent crashes
+process.on('uncaughtException', (err) => {
+  console.error('Uncaught Exception:', err);
+});
+
+process.on('unhandledRejection', (err) => {
+  console.error('Unhandled Rejection:', err);
+});
+
 const app = express();
 app.use(cors());
 app.use(express.json());
-app.get('/', (req, res) => {
-  res.send('Server is running 🚀');
-});
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 8080;
 
-// ✅ PostgreSQL Connection (Railway FIXED)
+// ✅ PostgreSQL connection
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: {
@@ -21,23 +27,23 @@ const pool = new Pool({
   }
 });
 
-// ✅ Connect to DB
+// ✅ Connect DB (non-blocking)
 async function connectDB() {
   try {
     await pool.query('SELECT NOW()');
     console.log('Connected to PostgreSQL database');
   } catch (error) {
     console.error('Database connection failed:', error);
-    process.exit(1);
   }
 }
+connectDB();
 
-// ✅ Health Check Route (VERY IMPORTANT for Railway)
+// ✅ ROOT ROUTE (Health check)
 app.get('/', (req, res) => {
-  res.send('Server is running');
+  res.send('Server is running 🚀');
 });
 
-// ✅ Validation Schema
+// ✅ Validation schema
 const schoolSchema = Joi.object({
   name: Joi.string().min(1).required(),
   address: Joi.string().min(1).required(),
@@ -45,7 +51,7 @@ const schoolSchema = Joi.object({
   longitude: Joi.number().min(-180).max(180).required(),
 });
 
-// ✅ Distance Function
+// ✅ Distance calculation
 function calculateDistance(lat1, lon1, lat2, lon2) {
   const R = 6371;
   const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -126,9 +132,7 @@ app.get('/listSchools', async (req, res) => {
   }
 });
 
-// ✅ Start Server (Railway FIXED)
-connectDB().then(() => {
-  app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Server running on port ${PORT}`);
-  });
+// ✅ START SERVER (CRITICAL FIX)
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Server running on port ${PORT}`);
 });
