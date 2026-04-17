@@ -8,9 +8,9 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-const port = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3000;
 
-// ✅ FIXED DATABASE CONNECTION (Railway compatible)
+// ✅ PostgreSQL Connection (Railway FIXED)
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: {
@@ -29,7 +29,12 @@ async function connectDB() {
   }
 }
 
-// ✅ Validation schema
+// ✅ Health Check Route (VERY IMPORTANT for Railway)
+app.get('/', (req, res) => {
+  res.send('Server is running');
+});
+
+// ✅ Validation Schema
 const schoolSchema = Joi.object({
   name: Joi.string().min(1).required(),
   address: Joi.string().min(1).required(),
@@ -37,7 +42,7 @@ const schoolSchema = Joi.object({
   longitude: Joi.number().min(-180).max(180).required(),
 });
 
-// ✅ Haversine Distance Function
+// ✅ Distance Function
 function calculateDistance(lat1, lon1, lat2, lon2) {
   const R = 6371;
   const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -54,7 +59,7 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
   return R * c;
 }
 
-// ✅ ADD SCHOOL API
+// ✅ Add School API
 app.post('/addSchool', async (req, res) => {
   try {
     const { error, value } = schoolSchema.validate(req.body);
@@ -80,7 +85,7 @@ app.post('/addSchool', async (req, res) => {
   }
 });
 
-// ✅ LIST SCHOOLS API
+// ✅ List Schools API
 app.get('/listSchools', async (req, res) => {
   try {
     const { latitude, longitude } = req.query;
@@ -118,9 +123,9 @@ app.get('/listSchools', async (req, res) => {
   }
 });
 
-// ✅ START SERVER
+// ✅ Start Server (Railway FIXED)
 connectDB().then(() => {
-app.listen(port, '0.0.0.0', () => {
-  console.log(`Server running on port ${port}`);
-});
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Server running on port ${PORT}`);
+  });
 });
